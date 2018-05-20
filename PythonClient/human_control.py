@@ -46,7 +46,7 @@ try:
 except ImportError:
     raise RuntimeError('cannot import numpy, make sure numpy package is installed')
 
-from configparser import SafeConfigParser
+from configparser import SafeConfigParser, NoSectionError
 
 from carla import image_converter
 from carla import sensor
@@ -71,11 +71,15 @@ class HumanDriver(object):
         self.control = VehicleControl()
         self.parser = SafeConfigParser()
         self.parser.read('wheel_config.ini')
-        self.steer_idx = int(self.parser.get('G29 Racing Wheel', 'steering_wheel'))
-        self.throttle_idx = int(self.parser.get('G29 Racing Wheel', 'throttle'))
-        self.brake_idx = int(self.parser.get('G29 Racing Wheel', 'brake'))
-        self.reverse_idx = int(self.parser.get('G29 Racing Wheel', 'reverse'))
-        self.handbrake_idx = int(self.parser.get('G29 Racing Wheel', 'handbrake'))
+        try:
+            self.js_name = str(self.js.get_name())
+            self.steer_idx = int(self.parser.get(self.js_name, 'steering_wheel'))
+            self.throttle_idx = int(self.parser.get(self.js_name, 'throttle'))
+            self.brake_idx = int(self.parser.get(self.js_name, 'brake'))
+            self.reverse_idx = int(self.parser.get(self.js_name, 'reverse'))
+            self.handbrake_idx = int(self.parser.get(self.js_name, 'handbrake'))
+        except NoSectionError:
+            RuntimeError("Unknown joystick %s. Please configure it in wheel_config.ini" % self.js_name)
 
     def reset_joystick(self):
         self.js = pygame.joystick.Joystick(0)
